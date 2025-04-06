@@ -101,7 +101,7 @@
             gameArea.textContent = `Ты нажал ${score} раз!`;
             
             // Отправка данных в Телеграм (опционально)
-            tg.sendData(JSON.stringify({action: 'score', value: score}));
+            // tg.sendData(JSON.stringify({action: 'score', value: score}));
         });
         
         resetBtn.addEventListener('click', () => {
