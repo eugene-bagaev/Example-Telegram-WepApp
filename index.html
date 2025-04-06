@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Телеграм Игра</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/telegram-web-app/6.10.0/telegram-web-app.js"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -61,6 +61,14 @@
             font-size: 18px;
             margin-bottom: 20px;
         }
+        .debug-info {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: rgba(0,0,0,0.3);
+            border-radius: 5px;
+            text-align: left;
+            font-size: 12px;
+        }
     </style>
 </head>
 <body>
@@ -74,45 +82,118 @@
             <button class="btn btn-primary" id="playBtn">Играть</button>
             <button class="btn btn-danger" id="resetBtn">Сбросить</button>
         </div>
+        
+        <!-- Область для отладки -->
+        <div class="debug-info" id="debugInfo">
+            Инициализация...
+        </div>
     </div>
 
     <script>
-        let tg = window.Telegram.WebApp;
-        tg.expand(); // Расширяем на весь экран
-        
-        // Инициализация
-        tg.ready();
-        
-        // Устанавливаем цвета в соответствии с темой Телеграма
-        if (tg.colorScheme === 'dark') {
-            document.body.style.backgroundColor = '#1c1c1c';
-        }
-        
-        // Простая логика игры (для демонстрации)
-        let score = 0;
-        const scoreElement = document.getElementById('score');
-        const gameArea = document.getElementById('gameArea');
-        const playBtn = document.getElementById('playBtn');
-        const resetBtn = document.getElementById('resetBtn');
-        
-        playBtn.addEventListener('click', () => {
-            score += 1;
-            scoreElement.textContent = score;
-            gameArea.textContent = `Ты нажал ${score} раз!`;
+        document.addEventListener('DOMContentLoaded', function() {
+            // Для отладки
+            function debug(message) {
+                const debugElement = document.getElementById('debugInfo');
+                if (debugElement) {
+                    debugElement.innerHTML += '<br>' + message;
+                }
+            }
             
-            // Отправка данных в Телеграм (опционально)
-            // tg.sendData(JSON.stringify({action: 'score', value: score}));
-        });
-        
-        resetBtn.addEventListener('click', () => {
-            score = 0;
-            scoreElement.textContent = score;
-            gameArea.textContent = 'Игра сброшена. Нажми "Играть" чтобы начать!';
-        });
-        
-        // Обработка событий от Телеграма (если бот что-то отправит)
-        tg.onEvent('mainButtonClicked', function(){
-            tg.sendData("Главная кнопка нажата");
+            debug('DOM загружен');
+            
+            // Проверяем доступность Telegram WebApp API
+            if (!window.Telegram || !window.Telegram.WebApp) {
+                debug('ОШИБКА: Telegram WebApp API не доступен');
+                return;
+            }
+            
+            debug('Telegram WebApp API доступен');
+            
+            // Инициализация Telegram WebApp
+            let tg = window.Telegram.WebApp;
+            debug('Версия WebApp: ' + tg.version);
+            
+            // Показываем информацию о платформе
+            debug('Платформа: ' + tg.platform);
+            
+            // Расширяем на весь экран
+            tg.expand();
+            debug('Приложение развернуто');
+            
+            // Сигнализируем о готовности
+            tg.ready();
+            debug('WebApp готов');
+            
+            // Устанавливаем цвета в соответствии с темой Телеграма
+            if (tg.colorScheme) {
+                debug('Цветовая схема: ' + tg.colorScheme);
+                if (tg.colorScheme === 'dark') {
+                    document.body.style.backgroundColor = '#1c1c1c';
+                }
+            }
+            
+            // Инициализация элементов игры
+            const scoreElement = document.getElementById('score');
+            const gameArea = document.getElementById('gameArea');
+            const playBtn = document.getElementById('playBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            
+            debug('Элементы DOM найдены');
+            
+            // Проверяем, что все элементы найдены
+            if (!scoreElement || !gameArea || !playBtn || !resetBtn) {
+                debug('ОШИБКА: Не все элементы DOM найдены!');
+                return;
+            }
+            
+            // Переменная для хранения счета
+            let score = 0;
+            
+            // Добавляем обработчики событий
+            try {
+                // Обработчик для кнопки "Играть"
+                playBtn.addEventListener('click', function() {
+                    score += 1;
+                    debug('Кнопка "Играть" нажата, счет: ' + score);
+                    scoreElement.textContent = score;
+                    gameArea.textContent = `Ты нажал ${score} раз!`;
+                    
+                    // Отправка данных в Телеграм (опционально)
+                    try {
+                        if (tg.sendData) {
+                            tg.sendData(JSON.stringify({action: 'score', value: score}));
+                            debug('Данные отправлены в Telegram');
+                        }
+                    } catch (e) {
+                        debug('Ошибка при отправке данных: ' + e.message);
+                    }
+                });
+                
+                // Обработчик для кнопки "Сбросить"
+                resetBtn.addEventListener('click', function() {
+                    score = 0;
+                    debug('Кнопка "Сбросить" нажата, счет сброшен');
+                    scoreElement.textContent = score;
+                    gameArea.textContent = 'Игра сброшена. Нажми "Играть" чтобы начать!';
+                });
+                
+                debug('Обработчики событий установлены');
+            } catch (e) {
+                debug('ОШИБКА при установке обработчиков: ' + e.message);
+            }
+            
+            // Обработка событий от Телеграма
+            try {
+                tg.onEvent('mainButtonClicked', function(){
+                    debug('Главная кнопка Telegram нажата');
+                    tg.sendData("Главная кнопка нажата");
+                });
+                debug('Обработчик mainButtonClicked установлен');
+            } catch (e) {
+                debug('ОШИБКА при установке обработчика событий Telegram: ' + e.message);
+            }
+            
+            debug('Инициализация завершена успешно');
         });
     </script>
 </body>
